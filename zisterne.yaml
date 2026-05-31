@@ -42,11 +42,6 @@ i2c:
   scl: GPIO22 # D1
   scan: True
 
-# cxcv: no temp sensor
-# # 1-Wire-Sensoren am Pin D4
-# dallas:
-#   - pin: D4
-
 # ADC einrichten, ADDR-Pin ist auf VCC gelegt, daher Adresse 0x49
 ads1115:
   - address: 0x49
@@ -74,21 +69,18 @@ sensor:
     unit_of_measurement: cm
     accuracy_decimals: 1
     icon: "mdi:car-coolant-level"
-# Messwerte glätten:
     filters:
-      - sliding_window_moving_average:
-          window_size: 90
-          send_every: 30
-# Spannungen nach Messreihe in Füllhöhe umrechnen          
+      # ignore negative measurements
+      - lambda: return max(0.0f, x);
       - calibrate_linear: # Volt -> cm
-          - -0.1 -> 0
           - 0.0 -> 0.0
-#          - 0.38 -> 55.0
-#          - 1.35 -> 185.0
           - 1.37-> 185.0
+      # smooth values last in filter chain
+      - exponential_moving_average:
+          alpha: 0.1 # Lower = smoother but slower, Higher = faster response
+          send_every: 1
 
-# Füllmenge nach Füllstandskurve berechnen
-
+  # convert level to volume using measurement series
   - platform: template
     name: "volume"
     lambda: |-
@@ -97,8 +89,6 @@ sensor:
     filters:
       - calibrate_linear: # cm -> liter
           - 0 -> 0
-#          - 200 -> 10000
-#          - 200 -> 6283 # r=1m
           - 200 -> 4539 # r=0,85m
           - 220 -> 4993 # r=0,85m
           - 225 -> 5093 # +10min/100l
@@ -106,31 +96,6 @@ sensor:
           - 235 -> 5208 # +4,5min/45l
           - 240 -> 5228 # +2,5min/20l
           - 245 -> 5248 # +2,5min/20l
-          # - 4 -> 80
-          # - 10 -> 200
-          # - 12.5 -> 300
-          # - 15 -> 400
-          # - 17.5 -> 500
-          # - 20 -> 600
-          # - 25 -> 850
-          # - 27.5 -> 1000
-          # - 40 -> 1700
-          # - 45 -> 2000
-          # - 60 -> 3000
-          # - 70 -> 3600
-          # - 80 -> 4000
-          # - 85 -> 4400
-          # - 90 -> 4700
-          # - 95.5 -> 4980
 
     unit_of_measurement: l
     accuracy_decimals: 0
-
-# cxcv: no temp
-# # 1-Wire Temperatursensor 
-
-#   - platform: dallas
-#     address: 0xef0516905a21ff28
-#     name: "Zisterne Sens1"
-#     unit_of_measurement: °C
-#     accuracy_decimals: 1
