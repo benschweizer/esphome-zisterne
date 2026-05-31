@@ -94,7 +94,7 @@ sensor:
       return id(levelraw).state;
     
     filters:
-      - calibrate_linear:
+      - calibrate_linear: # cm -> liter
           - -10 -> 0
           - 0 -> 0
 #          - 200 -> 10000
