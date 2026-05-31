@@ -1,0 +1,124 @@
+esphome:
+  name: zisterne
+
+esp32:
+  board: az-delivery-devkit-v4
+  framework:
+    type: esp-idf
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+#  password: !secret ApiPassword
+  encryption:
+    key: !secret ApiEncryptionKey
+
+ota:
+  - platform: esphome
+    password: !secret ApiPassword
+
+wifi:
+  ssid: !secret WifiSsid
+  password: !secret WifiPassword
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Zisterne Fallback Hotspot"
+    password: !secret WifiPassword
+
+captive_portal:
+
+# https://nachbelichtet.com/wasserstand-in-zisternen-mit-homeassistant-esphome-und-tl-136-drucksensor-messen
+# nodemcu pinout: https://cdn.shopify.com/s/files/1/1509/1638/files/ESP-32_NodeMCU_Developmentboard_Pinout.pdf?v=1609851295
+# i2c Bus auf D1 und D2 konfigurieren
+# cxcv: nodemcu mapping
+#  driver: CP210x_Universal_Windows_Driver
+#  $ esphome run .\zisterne.yaml
+i2c:
+  id: bus_a
+  sda: GPIO21 # D2
+  scl: GPIO22 # D1
+  scan: True
+
+# cxcv: no temp sensor
+# # 1-Wire-Sensoren am Pin D4
+# dallas:
+#   - pin: D4
+
+# ADC einrichten, ADDR-Pin ist auf VCC gelegt, daher Adresse 0x49
+ads1115:
+  - address: 0x49
+    id: ads1115_49
+
+# ADC Kanal A0 zur Messwerterfassung 
+sensor:
+  - platform: ads1115
+    multiplexer: 'A0_GND'
+    gain: 4.096
+    name: "height"
+    id: levelraw
+    update_interval: 1s
+    unit_of_measurement: cm
+    accuracy_decimals: 1
+    icon: "mdi:car-coolant-level"
+# Messwerte glätten:
+    filters:
+      - sliding_window_moving_average:
+          window_size: 300
+          send_every: 30
+# Spannungen nach Messreihe in Füllhöhe umrechnen          
+      - calibrate_linear:
+          - 0.0 -> 0.0
+#          - 0.38 -> 55.0
+#          - 1.35 -> 185.0
+          - 1.37-> 185.0
+
+# Füllmenge nach Füllstandskurve berechnen
+
+  - platform: template
+    name: "volume"
+    lambda: |-
+      return id(levelraw).state;
+    
+    filters:
+      - calibrate_linear:
+          - 0 -> 0
+#          - 200 -> 10000
+#          - 200 -> 6283 # r=1m
+          - 200 -> 4539 # r=0,85m
+          - 220 -> 4993 # r=0,85m
+          - 225 -> 5093 # +10min/100l
+          - 230 -> 5163 # +7min/70l
+          - 235 -> 5208 # +4,5min/45l
+          - 240 -> 5228 # +2,5min/20l
+          - 245 -> 5248 # +2,5min/20l
+          # - 4 -> 80
+          # - 10 -> 200
+          # - 12.5 -> 300
+          # - 15 -> 400
+          # - 17.5 -> 500
+          # - 20 -> 600
+          # - 25 -> 850
+          # - 27.5 -> 1000
+          # - 40 -> 1700
+          # - 45 -> 2000
+          # - 60 -> 3000
+          # - 70 -> 3600
+          # - 80 -> 4000
+          # - 85 -> 4400
+          # - 90 -> 4700
+          # - 95.5 -> 4980
+
+    unit_of_measurement: l
+    accuracy_decimals: 0
+
+# cxcv: no temp
+# # 1-Wire Temperatursensor 
+
+#   - platform: dallas
+#     address: 0xef0516905a21ff28
+#     name: "Zisterne Sens1"
+#     unit_of_measurement: °C
+#     accuracy_decimals: 1
