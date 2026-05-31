@@ -54,6 +54,17 @@ ads1115:
 
 # ADC Kanal A0 zur Messwerterfassung 
 sensor:
+  # Uptime-Sensor (Betriebszeit)
+  - platform: uptime
+    name: "${long_devicename} Betriebszeit"
+    id: uptime_seconds
+    update_interval: 30s
+
+  # WLAN-Signalstärke
+  - platform: wifi_signal
+    name: "${long_devicename} WLAN-Signal"
+    update_interval: 60s
+
   - platform: ads1115
     multiplexer: 'A0_GND'
     gain: 4.096
