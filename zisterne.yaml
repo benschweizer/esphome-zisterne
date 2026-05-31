@@ -80,7 +80,8 @@ sensor:
           window_size: 90
           send_every: 30
 # Spannungen nach Messreihe in Füllhöhe umrechnen          
-      - calibrate_linear:
+      - calibrate_linear: # Volt -> cm
+          - -0.1 -> 0
           - 0.0 -> 0.0
 #          - 0.38 -> 55.0
 #          - 1.35 -> 185.0
@@ -95,7 +96,6 @@ sensor:
     
     filters:
       - calibrate_linear: # cm -> liter
-          - -10 -> 0
           - 0 -> 0
 #          - 200 -> 10000
 #          - 200 -> 6283 # r=1m
